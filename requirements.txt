@@ -1,0 +1,7 @@
+dotenv
+requests
+beautifulsoup4
+lxml
+tqdm
+gradio
+nltk
