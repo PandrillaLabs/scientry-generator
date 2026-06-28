@@ -5,3 +5,7 @@ lxml
 tqdm
 gradio
 nltk
+citeproc-py
+citeproc-py-styles
+mineru[all]
+PyMuPDF

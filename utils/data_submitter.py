@@ -1,3 +1,4 @@
+import os
 import re
 
 import requests
@@ -44,14 +45,14 @@ class DataSubmitter:
         if not doi_set:
             self.logger.info("No DOIs to submit.")
             return
-        with open("dois.txt", "w") as f:
-            for doi in sorted(doi_set):
-                f.write(doi + "\n")
         cleaned_dois = set()
         for doi in doi_set:
             normalized_doi = self.normalize_doi(doi)
             if normalized_doi:
                 cleaned_dois.add(normalized_doi)
+        with open("dois.txt", "w") as f:
+            for doi in sorted(cleaned_dois):
+                f.write(doi + "\n")
         try:
             self.logger.info(f"Submitting {len(cleaned_dois)} DOIs to backend.")
             resp = self.session.post(
@@ -65,10 +66,17 @@ class DataSubmitter:
             else:
                 self.logger.error(resp.json().get("message") or f"Failed to submit DOIs: {resp.json().get('message')}")
         except requests.Timeout as e:
-            self.logger.error(f"Timeout occurred while submitting DOIs: {e}")
+            message = e.response.json().get("message") if e.response else str(e)
+            self.logger.error(f"Timeout occurred while submitting DOIs: {message}")
         except requests.ConnectionError as e:
-            self.logger.error(f"Connection error occurred while submitting DOIs: {e}")
+            message = e.response.json().get("message") if e.response else str(e)
+            self.logger.error(f"Connection error occurred while submitting DOIs: {message}")
         except requests.HTTPError as e:
-            self.logger.error(f"HTTP error occurred while submitting DOIs: {e}")
+            message = e.response.json().get("message") if e.response else str(e)
+            self.logger.error(f"HTTP error occurred while submitting DOIs: {message}")
         except requests.RequestException as e:
-            self.logger.error(f"Error submitting DOIs: {e}")
+            message = e.response.json().get("message") if e.response else str(e)
+            self.logger.error(f"Error submitting DOIs: {message}")
+        except Exception as e:
+            message = e.response.json().get("message") if e.response else str(e)
+            self.logger.error(f"Unexpected error occurred while submitting DOIs: {message}")
