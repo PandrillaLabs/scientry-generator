@@ -64,10 +64,9 @@ class OpenAlex:
             response.raise_for_status()
             paper_data = response.json()
             title = paper_data.get("title") or paper_data.get("display_name") or None
-            authors = [author.get("display_name").get("display_name") for author in paper_data.get("authorships", []) if author.get("author") and author.get("author").get("display_name")]
+            authors = [a["author"]["display_name"] for a in paper_data.get("authorships", []) if a.get("author") and a["author"].get("display_name")]
             abstract_text = self._decompress_abstract(paper_data.get("abstract_inverted_index")) or json_metadata.get("abstract") or None
             citation = apa_citation or None
-            citation_map = json_metadata or None
             category_id = paper_data.get("primary_topic", {}).get("field", {}).get("id").split("/")[-1] or None
             tag_ids = self._get_tags(paper_data) or []
             source = paper_data.get("best_oa_location", {}).get("source", {})
@@ -80,12 +79,11 @@ class OpenAlex:
                 with open("output.md", "w", encoding="utf-8") as f:
                     f.write(markdown)
             return MetadataDto(
-                doiId=doi,
+                doi=doi,
                 title=title,
                 authors=authors,
                 abstractText=abstract_text,
                 citation=citation,
-                citationMap=citation_map,
                 categoryId=category_id,
                 tagIds=tag_ids,
                 journalId=journalId,
@@ -94,10 +92,12 @@ class OpenAlex:
                 pdfUrl=pdf_url
             )
         except requests.Timeout as e:
-            self.logger.error(f"Timeout occurred while submitting DOIs: {e}")
+            self.logger.error(f"Timeout occurred while Collection DOI Metadata: {e}")
         except requests.ConnectionError as e:
-            self.logger.error(f"Connection error occurred while submitting DOIs: {e}")
+            self.logger.error(f"Connection error occurred while Collection DOI Metadata: {e}")
         except requests.HTTPError as e:
-            self.logger.error(f"HTTP error occurred while submitting DOIs: {e}")
+            self.logger.error(f"HTTP error occurred while Collection DOI Metadata: {e}")
         except requests.RequestException as e:
-            self.logger.error(f"Error submitting DOIs: {e}")
+            self.logger.error(f"Error Collection DOI Metadata: {e}")
+        except Exception as e:
+            self.logger.error(f"Unexpected error occurred while Collection DOI Metadata: {e}")

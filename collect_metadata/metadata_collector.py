@@ -22,6 +22,7 @@ class MetadataCollector:
             if not metadata_dto:
                 self.logger.error(f"Failed to retrieve OpenAlex metadata for DOI: {doi}")
                 return None
+            return metadata_dto.json()
         except Exception as e:
             self.logger.error(f"Error collecting metadata for DOI {doi}: {e}")
             return None
