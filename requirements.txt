@@ -1,11 +1,18 @@
-dotenv
-requests
-beautifulsoup4
-lxml
-tqdm
-gradio
-nltk
-citeproc-py
-citeproc-py-styles
-mineru[all]
-PyMuPDF
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+python-dotenv==1.2.2
+requests==2.34.2
+beautifulsoup4==4.15.0
+lxml==6.1.1
+tqdm==4.68.3
+gradio==6.19.0
+nltk==3.10.3
+citeproc-py==0.10.7
+citeproc-py-styles==0.1.5
+mineru[all]==3.4.0
+PyMuPDF==1.27.2.3
+# transformers==5.12.1
+# accelerate==1.14.0
+# torch==2.12.1
+# torchvision==0.27.1
+# torchaudio==2.11.0

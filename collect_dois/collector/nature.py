@@ -88,14 +88,14 @@ class NatureCollector:
                     dois.add(doi)
                     continue
                 label = link.get("data-track-label")
-                if label and label.startswith("10."):
+                if isinstance(label, str) and label.startswith("10."):
                     dois.add(label)
                     continue
                 item = link.get("data-track-item_id")
-                if item and item.startswith("10."):
+                if isinstance(item, str) and item.startswith("10."):
                     dois.add(item)
                     continue
-                href = unquote(link["href"])
+                href = unquote(str(link.get("href") or ""))
                 if "doi.org/" in href:
                     doi = href.split("doi.org/")[-1].split("?")[0]
                     if doi.startswith("10."):

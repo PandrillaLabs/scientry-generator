@@ -12,9 +12,10 @@ from config.logger import GlobalLogger
 class DataSubmitter:
     def __init__(self):
         self.logger = GlobalLogger().get_logger(self.__class__)
-        self.data_sources = "sources/sciencedaily.json"
-        self.add_dois_endpoint = EnvConfig.REQUEST_PAPERS_URL
         self.session = requests.Session()
+        self.session.headers.update({"Content-Type": "application/json"})
+        self.session.headers.update({"True-Client-IP": EnvConfig.CLIENT_IP})
+        self.session.headers.update({"X-Session-ID": EnvConfig.COOKIE_ID})
         adapter = HTTPAdapter(
             pool_connections=128,
             pool_maxsize=128,
@@ -41,7 +42,7 @@ class DataSubmitter:
         match = self.DOI_REGEX.search(text)
         return match.group(0) if match else None
 
-    def submit_dois(self, doi_set):
+    def submit_dois(self, doi_set: set[str]):
         if not doi_set:
             self.logger.info("No DOIs to submit.")
             return
@@ -56,27 +57,13 @@ class DataSubmitter:
         try:
             self.logger.info(f"Submitting {len(cleaned_dois)} DOIs to backend.")
             resp = self.session.post(
-                self.add_dois_endpoint,
-                json={"doiIds": list(cleaned_dois)},
-                headers={"Authorization": f"Bearer {EnvConfig.BACKEND_API_KEY}"},
+                EnvConfig.REQUEST_PAPERS_URL,
+                json={"dois": list(cleaned_dois)}
             )
-            resp.raise_for_status()
-            if (resp.json().get("code") == 0):
+            if resp.ok and resp.json().get("code") == 0:
                 self.logger.info(resp.json().get("message") or f"Successfully submitted {len(cleaned_dois)} DOIs.")
             else:
                 self.logger.error(resp.json().get("message") or f"Failed to submit DOIs: {resp.json().get('message')}")
-        except requests.Timeout as e:
-            message = e.response.json().get("message") if e.response else str(e)
-            self.logger.error(f"Timeout occurred while submitting DOIs: {message}")
-        except requests.ConnectionError as e:
-            message = e.response.json().get("message") if e.response else str(e)
-            self.logger.error(f"Connection error occurred while submitting DOIs: {message}")
-        except requests.HTTPError as e:
-            message = e.response.json().get("message") if e.response else str(e)
-            self.logger.error(f"HTTP error occurred while submitting DOIs: {message}")
-        except requests.RequestException as e:
-            message = e.response.json().get("message") if e.response else str(e)
-            self.logger.error(f"Error submitting DOIs: {message}")
         except Exception as e:
-            message = e.response.json().get("message") if e.response else str(e)
+            message = str(e)
             self.logger.error(f"Unexpected error occurred while submitting DOIs: {message}")

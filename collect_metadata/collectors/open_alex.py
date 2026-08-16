@@ -3,6 +3,7 @@ from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
 from collect_metadata.collectors.doi_org import DoiOrg
+from collect_metadata.collectors.paper_document_collector import PaperDocumentCollector
 from config.logger import GlobalLogger
 from collect_metadata.metadata_dto import MetadataDto
 
@@ -57,16 +58,15 @@ class OpenAlex:
             tags.extend(["SDGS" + sdg for sdg in sdgs])
         return tags
 
-    def get_doi_metadata(self, doi) -> MetadataDto:
+    def get_doi_metadata(self, doi: str, json_metadata: dict, apa_citation: str) -> MetadataDto:
         try:
-            json_metadata = self.doi_org.get_json_metadata(doi)
             response = self.session.get(f"https://api.openalex.org/works/doi:{doi}")
             response.raise_for_status()
             paper_data = response.json()
             title = paper_data.get("title") or paper_data.get("display_name") or None
             authors = [author.get("display_name").get("display_name") for author in paper_data.get("authorships", []) if author.get("author") and author.get("author").get("display_name")]
             abstract_text = self._decompress_abstract(paper_data.get("abstract_inverted_index")) or json_metadata.get("abstract") or None
-            citation = self.doi_org.get_apa_citation(json_metadata) or None
+            citation = apa_citation or None
             citation_map = json_metadata or None
             category_id = paper_data.get("primary_topic", {}).get("field", {}).get("id").split("/")[-1] or None
             tag_ids = self._get_tags(paper_data) or []
@@ -74,7 +74,11 @@ class OpenAlex:
             journalId = source.get("id").split("/")[-1] or None
             publisherId = source.get("host_organization").split("/")[-1] or None
             published_year = paper_data.get("publication_year") or None
-            pdf_url = paper_data.get("best_oa_location", {}).get("url_for_pdf") or None
+            pdf_url = paper_data.get("best_oa_location", {}).get("pdf_url") or None
+            markdown = PaperDocumentCollector().get_paper_markdown(doi, json_metadata, paper_data) or None
+            if markdown:
+                with open("output.md", "w", encoding="utf-8") as f:
+                    f.write(markdown)
             return MetadataDto(
                 doiId=doi,
                 title=title,

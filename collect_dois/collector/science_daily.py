@@ -74,9 +74,8 @@ class ScienceDailyCollector:
             r.raise_for_status()
             root = ET.fromstring(r.text)
             return [
-                item.find("link").text
-                for item in root.findall(".//item")
-                if item.find("link") is not None
+                link.text for item in root.findall(".//item")
+                if (link := item.find("link")) is not None and link.text
             ]
         except Exception as e:
             self.logger.error(e)
