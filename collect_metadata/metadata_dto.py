@@ -15,6 +15,7 @@ class MetadataDto(BaseModel):
     publisherId: str = Field(..., description="Publisher ID of the article")
     publishedYear: int = Field(..., ge=1900, le=2100, description="Year the article was published")
     pdfUrl: str = Field(..., description="URL to the PDF of the article")
+    pdfMarkdownContent: str = Field(..., description="Markdown content of the article's PDF")
 
     def json(self):
         return self.model_dump_json()

@@ -9,3 +9,5 @@ class EnvConfig:
     CLIENT_IP = os.environ["CLIENT_IP"]
 
     REQUEST_PAPERS_URL = f"{BASE_BACKEND_URL}/papers/request"
+    REQUESTED_PAPERS_URL = f"{BASE_BACKEND_URL}/papers/requested"
+    COLLECT_PAPER_METADATA_URL = f"{BASE_BACKEND_URL}/papers/collect"
