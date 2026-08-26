@@ -30,14 +30,12 @@ class PaperDocumentCollector:
         )
 
     def get_markdown_from_pdf(self, pdf_url: str) -> str | None:
-        try:
-            markdown_text = self.pdf_utils.pdf_to_markdown(pdf_url)
-            return markdown_text
-        except Exception as e:
-            self.logger.error(f"Error converting PDF to Markdown: {e}")
-            return None
+        markdown_text = self.pdf_utils.pdf_to_markdown(pdf_url)
+        if not markdown_text or len(markdown_text.strip()) < 100:
+            raise Exception(f"Failed to convert PDF to Markdown")
+        return markdown_text
 
-    def get_paper_markdown(self, doi_id: str, json_citation: dict, paper_data: dict) -> str | None:
+    def get_paper_markdown(self, doi_id: str, json_citation: dict, paper_data: dict) -> str:
         # ARXIV
         if "arxiv" in doi_id.lower():
             arxiv_id = doi_id.split("/arxiv.")[-1].strip().split("/arXiv.")[-1]
@@ -85,5 +83,5 @@ class PaperDocumentCollector:
                     return markdown_text
 
         # NO PDF FOUND
-        self.logger.warning(f"Failed to retrieve PDF for DOI: {doi_id}")
-        return None
+        self.logger.warning(f"Failed to extract text from PDF for DOI: {doi_id}")
+        raise Exception(f"Failed to extract text from PDF")

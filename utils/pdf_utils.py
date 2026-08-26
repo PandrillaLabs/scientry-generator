@@ -52,6 +52,7 @@ class PDFUtils:
                         )
                 except Exception as inner_e:
                     self.logger.error(f"Failed fallback request: {inner_e}")
+                    raise Exception(f"Failed to download file after fallback")
             if response.status_code == 200:
                 os.makedirs("downloads", exist_ok=True)
                 safe_name = os.path.basename(online_file_path).replace("?", "_")
@@ -63,10 +64,10 @@ class PDFUtils:
                 return local_file_path
             else:
                 self.logger.warning(f"Download failed: {response.status_code} for {online_file_path}")
-                return None
+                raise Exception(f"Failed to download file: HTTP {response.status_code}")
         except Exception as e:
             self.logger.error(f"Error downloading file: {e}")
-            return None
+            raise Exception(f"Failed to download file")
 
     def is_valid_pdf(self, file_path: str) -> bool:
         try:
@@ -108,16 +109,16 @@ class PDFUtils:
             except:
                 continue
 
-    def pdf_to_markdown(self, online_file_path: str) -> str | None:
+    def pdf_to_markdown(self, online_file_path: str) -> str:
         local_file_path = self.download_file(online_file_path)
         if not local_file_path:
             self.logger.warning("Failed to download PDF.")
-            return None
+            raise Exception(f"Failed to download PDF")
         if not self.is_valid_pdf(local_file_path):
             self.logger.warning("Downloaded file is not a valid PDF.")
             if os.path.exists(local_file_path):
                 os.remove(local_file_path)
-            return None
+            raise Exception(f"Downloaded file is not a valid PDF")
         pdf_path = Path(local_file_path)
         output_dir = Path(pdf_path.stem)
         md_output_path = output_dir.with_suffix(".md")

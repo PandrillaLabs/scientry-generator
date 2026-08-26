@@ -23,6 +23,7 @@ class OpenAlex:
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
         self.doi_org = DoiOrg()
+        self.paperDocumentCollector = PaperDocumentCollector()
 
     def _decompress_abstract(self, compressed_abstract: dict[str, list[int]]) -> str | None:
         if compressed_abstract is None:
@@ -61,7 +62,6 @@ class OpenAlex:
     def get_doi_metadata(self, doi: str, json_metadata: dict, apa_citation: str) -> MetadataDto:
         try:
             response = self.session.get(f"https://api.openalex.org/works/doi:{doi}")
-            response.raise_for_status()
             paper_data = response.json()
             title = paper_data.get("title") or paper_data.get("display_name") or None
             authors = [a["author"]["display_name"] for a in paper_data.get("authorships", []) if a.get("author") and a["author"].get("display_name")]
@@ -74,10 +74,9 @@ class OpenAlex:
             publisherId = source.get("host_organization").split("/")[-1] or None
             published_year = paper_data.get("publication_year") or None
             pdf_url = paper_data.get("best_oa_location", {}).get("pdf_url") or None
-            markdown = PaperDocumentCollector().get_paper_markdown(doi, json_metadata, paper_data) or None
-            if markdown:
-                with open("output.md", "w", encoding="utf-8") as f:
-                    f.write(markdown)
+            markdown = self.paperDocumentCollector.get_paper_markdown(doi, json_metadata, paper_data) or None
+            if not markdown:
+                raise Exception("Failed to extract text from PDF or PDF is undownloadable.")
             return MetadataDto(
                 doi=doi,
                 title=title,
@@ -89,15 +88,13 @@ class OpenAlex:
                 journalId=journalId,
                 publisherId=publisherId,
                 publishedYear=published_year,
-                pdfUrl=pdf_url
+                pdfUrl=pdf_url,
+                pdfMarkdownContent=markdown
             )
-        except requests.Timeout as e:
-            self.logger.error(f"Timeout occurred while Collection DOI Metadata: {e}")
-        except requests.ConnectionError as e:
-            self.logger.error(f"Connection error occurred while Collection DOI Metadata: {e}")
         except requests.HTTPError as e:
-            self.logger.error(f"HTTP error occurred while Collection DOI Metadata: {e}")
-        except requests.RequestException as e:
-            self.logger.error(f"Error Collection DOI Metadata: {e}")
+            response = e.response
+            error_reason = (f"HTTP {response.status_code}: "f"{response.reason or str(e)}") if response else str(e)
+            raise Exception(f"Failed to get OpenAlex metadata: {error_reason}")
         except Exception as e:
             self.logger.error(f"Unexpected error occurred while Collection DOI Metadata: {e}")
+            raise Exception(f"Failed to get OpenAlex metadata")
